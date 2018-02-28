@@ -99,7 +99,8 @@ function errorchecker($fin1){
 function ifLocal($ip_address, $user){
 # SPRAWDZA, CZY UZYTKOWNIK WYBRAL KOPIOWANIE Z LOKALNEGO DYSKU
     if($ip_address -eq 'L' -or $ip_address -eq 'l'){ 
-        $fin1 = localDiskChecker $user $path $disks
+        $local_flag = 1
+        $fin1 = localDiskChecker $user $path $disks $local_flag
         Write-Host $fin1
         return $fin1
     }
@@ -110,7 +111,7 @@ function ifLocal($ip_address, $user){
     }
 }
 
-function sizeAndElementsCounter($fin1,$fin2,$additionalfiles) {
+function summary($fin1,$fin2,$additionalfiles) {
    Clear-Host 
    $items =  Get-ChildItem $fin1'\Documents',$fin1'\Desktop',$fin1'\My Documents',$fin1'\Pictures',$fin1'\Music',$fin1'\Favorites',$fin1'\Contacts',$fin1'\Videos',$fin1'\Downloads' -Recurse
    $total_amount_of_elems = ($items | Measure-Object).Count 
@@ -270,7 +271,7 @@ if($False){ #$env:UserName[1] -ne "_"
             }            
         }
         $additionalfiles = addFiles
-        sizeAndElementsCounter $fin1 $fin2 $additionalfiles
+        summary $fin1 $fin2 $additionalfiles
         pause
         copyFiles $fin1 $fin2 $additionalFiles
         }
@@ -279,7 +280,7 @@ if($False){ #$env:UserName[1] -ne "_"
     elseif ($option_choice -eq 2){ 
         while($returnFlag -eq 0){
         Clear-Host
-        Write-Host "-------------> KOPIOWANIE Z DYSKU <-------------`n"     
+        Write-Host "-------------> KOPIOWANIE PRZEZ SIEC <-------------`n"     
         $user = Read-Host "PODAJ NAZWE UZYTKOWNIKA: "
         $ip_address = Read-Host "Z KOMPUTERA(ADRES IP - JEZELI LOKALNY WPISZ 'L'): "
         $ip_address2 = Read-Host "NA KOMPUTER(ADRES IP - JEZELI LOKALNY WPISZ 'L'): "
@@ -295,7 +296,7 @@ if($False){ #$env:UserName[1] -ne "_"
             Write-Host "DYSK1: " $fin1 
             Write-Host "DYSK2: " $fin2
             $additionalfiles = addFiles
-            sizeAndElementsCounter $fin1 $fin2 $additionalfiles
+            summary $fin1 $fin2 $additionalfiles
             pause
             copyFiles $fin1 $fin2 $additionalfiles
 
