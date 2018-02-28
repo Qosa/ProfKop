@@ -7,3 +7,4 @@
 	- na zdalnym - TAK
 	- ze zdalnego - bez sensu
 	- na lokalny - TAK
+- uniemozliwienie logowania "z lokalnego" oraz "ze zdalnego"

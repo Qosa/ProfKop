@@ -99,7 +99,7 @@ function errorchecker($fin1){
 function ifLocal($ip_address, $user){
 # SPRAWDZA, CZY UZYTKOWNIK WYBRAL KOPIOWANIE Z LOKALNEGO DYSKU
     if($ip_address -eq 'L' -or $ip_address -eq 'l'){ 
-        $local_flag = 1
+        $local_flag = 0
         $fin1 = localDiskChecker $user $path $disks $local_flag
         Write-Host $fin1
         return $fin1
