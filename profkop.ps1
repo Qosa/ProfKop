@@ -68,7 +68,7 @@ function checkNetworkDrive($ip_address,$disks, $user, $path){
          $complete_path = 0
          $break_counter = 0
          for($x=0; $x -le 6; $x++) {
-            $letter=$disks[$x]+'$'
+            $letter=""+$disks[$x]+'$'
             $fin2="$ip_address_withslashes$letter$path$user"
 	        if (Test-Path $fin2) {
                 $break_counter++ 
@@ -90,9 +90,13 @@ function errorchecker($fin1){
 	    exit
     }
     elseif($fin1 -eq -1){
-        Write-Host "PROBLEM Z POLACZENIEM Z HOSTEM DOCELOWYM"
-        pause
-        exit
+        $try_again = Read-Host "PROBLEM Z POLACZENIEM Z HOSTEM DOCELOWYM BADZ PODANO NIEPRAWIDLOWA NAZWE/ADRES HOSTA! SPROBOWAC PONOWNIE? (Y - tak, dowolny klawisz + enter - wyjscie)"
+        if($try_again -eq 'Y' -or $try_again -eq 'y'){
+            return 0
+        } else {
+            Clear-Host
+            exit
+        }
     }
 }
 
@@ -112,11 +116,11 @@ function ifLocal($ip_address, $user){
 }
 
 function summary($fin1,$fin2,$additionalfiles) {
-   Clear-Host 
+   Clear-Host
+   Write-Host "`n-----> PODSUMOWANIE:" 
    $items =  Get-ChildItem $fin1'\Documents',$fin1'\Desktop',$fin1'\My Documents',$fin1'\Pictures',$fin1'\Music',$fin1'\Favorites',$fin1'\Contacts',$fin1'\Videos',$fin1'\Downloads' -Recurse
    $total_amount_of_elems = ($items | Measure-Object).Count 
    $total_size_of_elems = [math]::Round(($items | Measure-Object -Sum Length).Sum / 1GB,3)
-   Write-Host "`n-----> PODSUMOWANIE:"
    Write-Host "-----------> Z: "$fin1[0]" NA: "$fin2[0]
    Write-Host "-----------> DO SKOPIOWANIA OGOLEM:"$total_amount_of_elems" elementow"
    Write-Host "-----------> DODATKOWE PLIKI:"
@@ -293,14 +297,16 @@ if($False){ #$env:UserName[1] -ne "_"
         else {
             $fin1 = ifLocal $ip_address $user
             $fin2 = ifLocal $ip_address2 $user
-            Write-Host "DYSK1: " $fin1 
-            Write-Host "DYSK2: " $fin2
-            $additionalfiles = addFiles
-            summary $fin1 $fin2 $additionalfiles
-            pause
-            copyFiles $fin1 $fin2 $additionalfiles
-
-            $returnFlag = 1
+            if($fin1 -eq 0 -or $fin2 -eq 0) {
+                $returnFlag = 0
+            } else {
+                Write-Host "DYSK1(Z): " $fin1 
+                Write-Host "DYSK2(NA): " $fin2
+                $additionalfiles = addFiles
+                summary $fin1 $fin2 $additionalfiles
+                pause
+                copyFiles $fin1 $fin2 $additionalfiles
+            }
         }
     }
     }

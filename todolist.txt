@@ -1,10 +1,12 @@
 - menu kontekstowe
+	- petla przy wybraniu zlej opcji na poczatku skryptu
+	- petla przy wpisaniu nieprawidlowego hosta
+	- petla w przypadku powrotu do poczatku po anulowaniu w menu logowania
 - przechwycenie bledu null array (RuntimeException) gdy uzytkownik nie wybral zadnych dodatkowych plikow
 - uwzglednienie calego adresu IP w podsumowaniu (sekcja Z NA)
-- sprawdzenie mozliwosci zdalnego zalogowania uzytkownika
 - umozliwienie zalogowania uzytkownika:
 	- z lokalnego - bez sensu
-	- na zdalnym - TAK
+	- na zdalnym - NIESTETY NIE JEST TO WYKONALNE
 	- ze zdalnego - bez sensu
 	- na lokalny - TAK
 - uniemozliwienie logowania "z lokalnego" oraz "ze zdalnego"
