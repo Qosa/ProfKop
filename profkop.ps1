@@ -296,17 +296,21 @@ if($False){ #$env:UserName[1] -ne "_"
         }
         else {
             $fin1 = ifLocal $ip_address $user
-            $fin2 = ifLocal $ip_address2 $user
-            if($fin1 -eq 0 -or $fin2 -eq 0) {
+            if($fin1 -eq 0) {
                 $returnFlag = 0
             } else {
-                Write-Host "DYSK1(Z): " $fin1 
-                Write-Host "DYSK2(NA): " $fin2
-                $additionalfiles = addFiles
-                summary $fin1 $fin2 $additionalfiles
-                pause
-                copyFiles $fin1 $fin2 $additionalfiles
-            }
+                $fin2 = ifLocal $ip_address2 $user
+                if($fin2 -eq 0) {
+                    $returnFlag = 0
+                } else {
+                    Write-Host "DYSK1(Z): " $fin1 
+                    Write-Host "DYSK2(NA): " $fin2
+                    $additionalfiles = addFiles
+                    summary $fin1 $fin2 $additionalfiles
+                    pause
+                    copyFiles $fin1 $fin2 $additionalfiles
+                }
+            } 
         }
     }
     }
