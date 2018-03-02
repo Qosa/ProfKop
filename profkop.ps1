@@ -29,7 +29,8 @@ function localDiskChecker($user,$path,$disks,$local_flag) {
         $fin1="$letter$path$user"
         $break_counter = 0
 	    if (Test-Path $fin1) {
-		    Write-Host "UZYTKOWNIK ZALOGOWANY NA PARTYCJI --->>" $disks[$x]
+            #Write-Host "DYSK LOKALNY" -ForegroundColor Yellow
+		    #Write-Host "UZYTKOWNIK ZALOGOWANY NA PARTYCJI --->>" $disks[$x] -ForegroundColor Yellow
 		    $disks[$x]=0 
             $break_counter++
             return $fin1
@@ -85,9 +86,13 @@ function checkNetworkDrive($ip_address,$disks, $user, $path){
 function errorchecker($fin1){
 # SPRAWDZENIE DOSTEPNOSCI HOSTA ORAZ CZY PROFIL ZNAJDUJE SIE NA PODANYM KOMPUTERZE
     if($fin1 -eq 0) {
-        Write-Host "UZYTKOWNIK NIEZALOGOWANY! PRZED ROZPOCZECIEM KOPIOWANIA PROFILU ZALOGUJ UZYTKOWNIKA NA ZDALNYM KOMPUTERZE I URUCHOM SKRYPT PONOWNIE!"
-        pause
-	    exit
+        $try_again = Read-Host "UZYTKOWNIK NIEZALOGOWANY NA ZDALNYM KOMPUTERZE! SPROBOWAC PONOWNIE??? (Y - tak, dowolny klawisz + enter - wyjscie)"
+        if($try_again -eq 'Y' -or $try_again -eq 'y'){
+            return 0
+        } else {
+            Clear-Host
+            exit
+        }
     }
     elseif($fin1 -eq -1){
         $try_again = Read-Host "PROBLEM Z POLACZENIEM Z HOSTEM DOCELOWYM BADZ PODANO NIEPRAWIDLOWA NAZWE/ADRES HOSTA! SPROBOWAC PONOWNIE? (Y - tak, dowolny klawisz + enter - wyjscie)"
@@ -105,12 +110,14 @@ function ifLocal($ip_address, $user){
     if($ip_address -eq 'L' -or $ip_address -eq 'l'){ 
         $local_flag = 0
         $fin1 = localDiskChecker $user $path $disks $local_flag
-        Write-Host $fin1
         return $fin1
     }
     else {
         $fin1 = checkNetworkDrive $ip_address $disks $user $path
-        errorchecker $fin1
+        $host_error = errorchecker $fin1
+        if($host_error -eq 0) {
+            return 0
+        }
         return $fin1
     }
 }
@@ -121,14 +128,19 @@ function summary($fin1,$fin2,$additionalfiles) {
    $items =  Get-ChildItem $fin1'\Documents',$fin1'\Desktop',$fin1'\My Documents',$fin1'\Pictures',$fin1'\Music',$fin1'\Favorites',$fin1'\Contacts',$fin1'\Videos',$fin1'\Downloads' -Recurse
    $total_amount_of_elems = ($items | Measure-Object).Count 
    $total_size_of_elems = [math]::Round(($items | Measure-Object -Sum Length).Sum / 1GB,3)
-   Write-Host "-----------> Z: "$fin1[0]" NA: "$fin2[0]
-   Write-Host "-----------> DO SKOPIOWANIA OGOLEM:"$total_amount_of_elems" elementow"
-   Write-Host "-----------> DODATKOWE PLIKI:"
-   for($x=0; $x -le ($additionalfiles | Measure-Object).Count; $x++) {  
-       Write-Host "      "$additionalfiles[$x]
+   Write-Host "-----------> Z: "$fin1
+   Write-Host "-----------> NA: "$fin2
+   Write-Host "-----------> DO SKOPIOWANIA OGOLEM:"$total_amount_of_elems" elementow" 
+   Write-Host "-----------> DODATKOWE PLIKI:" -NoNewline
+   Try {
+        for($x=0; $x -le ($additionalfiles | Measure-Object).Count; $x++) {  
+            Write-Host "      "$additionalfiles[$x]
+        }
+   } Catch {
+       Write-Host " nie wybrano" -ForegroundColor Yellow
    }
-   Write-Host "-----------> CALKOWITY ROZMIAR:"$total_size_of_elems" GB"
-}
+   Write-Host "-----------> CALKOWITY ROZMIAR:"$total_size_of_elems" GB" -ForegroundColor Magenta
+  }
 
 function copyFiles($fin1, $fin2, $additionalfiles){
     $FOF_CREATEPROGRESSDLG = "&H0&"
@@ -241,82 +253,92 @@ if($False){ #$env:UserName[1] -ne "_"
     $path = '\Users\'
     $local_flag = 0
     $returnFlag = 0
+    $correct_mode_choice = 0
+    while($correct_mode_choice -eq 0) { 
+        # ----- WYBOR METODY KOPIOWANIA DANYCH -----
+        Write-Host " ---------------------------------- "
+        Write-Host " ------------- KOPIUJ ------------- "
+        Write-Host " 1 > KOPIOWANIE Z DYSKU "
+        Write-Host " 2 > KOPIOWANIE PRZEZ SIEC " 
+        $option_choice = Read-Host "WYBIERZ OPCJE: "
 
-    # ----- WYBOR METODY KOPIOWANIA DANYCH -----
-    Write-Host " ---------------------------------- "
-    Write-Host " ------------- KOPIUJ ------------- "
-    Write-Host " 1 > KOPIOWANIE Z DYSKU "
-    Write-Host " 2 > KOPIOWANIE PRZEZ SIEC " 
-    $option_choice = Read-Host "WYBIERZ OPCJE: "
-
-    # ----- KOPIOWANIE Z DYSKU USB NA DYSK LOKALNY
-    if ($option_choice -eq 1) { 
-        $disk_flag = 0
-        $disk_flag2 = 0
-        while($disk_flag -eq 0){
-            while($disk_flag2 -eq 0){
-            Clear-Host
-            Write-Host "-------------> KOPIOWANIE Z DYSKU <-------------`n" 
-            $user = Read-Host "PODAJ LOGIN UZYTKOWNIKA"
-            $fin2 = localDiskChecker $user $path $disks $local_flag #DESTINATION
-            Write-Host ">LOKALIZACJA: "$fin2
-            if($fin2 -ne 0){
-                $disk_flag2 = 1
+        # ----- KOPIOWANIE Z DYSKU USB NA DYSK LOKALNY
+        if ($option_choice -eq 1) { 
+            $disk_flag = 0
+            $disk_flag2 = 0
+            while($disk_flag -eq 0){
+                while($disk_flag2 -eq 0){
+                Clear-Host
+                Write-Host "-------------> KOPIOWANIE Z DYSKU <-------------`n" 
+                $user = Read-Host "PODAJ LOGIN UZYTKOWNIKA"
+                $fin2 = localDiskChecker $user $path $disks $local_flag #DESTINATION
+                #Write-Host ">LOKALIZACJA: "$fin2
+                if($fin2 -ne 0){
+                    $disk_flag2 = 1
+                }
             }
-        }
-            $local_flag = 1
-            $fin1 = localDiskChecker $user $path $disks $local_flag #SOURCE
-            Write-Host ">LOKALIZACJA: "$fin1
-            if($fin1 -ne 0){
-                $disk_flag = 1
-            } elseif($fin1 -eq 0) {
-                $disk_flag2 = 0
-                $local_flag = 0
-            }            
-        }
-        $additionalfiles = addFiles
-        summary $fin1 $fin2 $additionalfiles
-        pause
-        copyFiles $fin1 $fin2 $additionalFiles
-        }
-        
-    # ----- KOPIOWANIE PO SIECI 
-    elseif ($option_choice -eq 2){ 
-        while($returnFlag -eq 0){
-        Clear-Host
-        Write-Host "-------------> KOPIOWANIE PRZEZ SIEC <-------------`n"     
-        $user = Read-Host "PODAJ NAZWE UZYTKOWNIKA: "
-        $ip_address = Read-Host "Z KOMPUTERA(ADRES IP - JEZELI LOKALNY WPISZ 'L'): "
-        $ip_address2 = Read-Host "NA KOMPUTER(ADRES IP - JEZELI LOKALNY WPISZ 'L'): "
-        if(($ip_address -eq 'l' -or $ip_address -eq 'L') -and ($ip_address2 -eq 'l' -or $ip_address2 -eq 'L')) {
-            Write-Host "W OBU PRZYPADKACH WYBRANO KOPIOWANIE LOKALNE - OPERACJA NIEDOZWOLONA!"
+                $local_flag = 1
+                $fin1 = localDiskChecker $user $path $disks $local_flag #SOURCE
+                #Write-Host ">LOKALIZACJA: "$fin1
+                if($fin1 -ne 0){
+                    $disk_flag = 1
+                } elseif($fin1 -eq 0) {
+                    $disks = 'c','d','e','f','g','h','i'
+                    $disk_flag2 = 0
+                    $local_flag = 0
+                }            
+            }
+            Write-Host "DYSK1(Z): " $fin1 -ForegroundColor Magenta
+            Write-Host "DYSK2(NA): " $fin2 -ForegroundColor Magenta
+            $additionalfiles = addFiles
+            summary $fin1 $fin2 $additionalfiles
             pause
-            $returnFlag = 0
+            copyFiles $fin1 $fin2 $additionalFiles
+            $correct_mode_choice = 0
+            }
+            
+        # ----- KOPIOWANIE PO SIECI 
+        elseif ($option_choice -eq 2){ 
+            while($returnFlag -eq 0){
             Clear-Host
-        }
-        else {
-            $fin1 = ifLocal $ip_address $user
-            if($fin1 -eq 0) {
+            Write-Host "-------------> KOPIOWANIE PRZEZ SIEC <-------------`n"     
+            $user = Read-Host "PODAJ NAZWE UZYTKOWNIKA: "
+            $ip_address = Read-Host "Z KOMPUTERA(ADRES IP - JEZELI LOKALNY WPISZ 'L'): "
+            $ip_address2 = Read-Host "NA KOMPUTER(ADRES IP - JEZELI LOKALNY WPISZ 'L'): "
+            if(($ip_address -eq 'l' -or $ip_address -eq 'L') -and ($ip_address2 -eq 'l' -or $ip_address2 -eq 'L')) {
+                Write-Host "W OBU PRZYPADKACH WYBRANO KOPIOWANIE LOKALNE - OPERACJA NIEDOZWOLONA!"
+                pause
                 $returnFlag = 0
-            } else {
-                $fin2 = ifLocal $ip_address2 $user
-                if($fin2 -eq 0) {
+                Clear-Host
+            }
+            else {
+                $fin1 = ifLocal $ip_address $user
+                if($fin1 -eq 0) {
                     $returnFlag = 0
                 } else {
-                    Write-Host "DYSK1(Z): " $fin1 
-                    Write-Host "DYSK2(NA): " $fin2
-                    $additionalfiles = addFiles
-                    summary $fin1 $fin2 $additionalfiles
-                    pause
-                    copyFiles $fin1 $fin2 $additionalfiles
-                }
-            } 
+                    $fin2 = ifLocal $ip_address2 $user
+                    if($fin2 -eq 0) {
+                        $returnFlag = 0
+                    } else {
+                        Write-Host "DYSK1(Z): " $fin1 -ForegroundColor Magenta
+                        Write-Host "DYSK2(NA): " $fin2 -ForegroundColor Magenta
+                        $additionalfiles = addFiles
+                        summary $fin1 $fin2 $additionalfiles
+                        pause
+                        copyFiles $fin1 $fin2 $additionalfiles
+                        $correct_mode_choice = 1
+                    }
+                } 
+            }
         }
-    }
-    }
+        }
 
-    else {
-        Write-Host "NIE MA TAKIEJ OPCJI! SPROBUJ PONOWNIE!"
+        else {
+            Write-Host "NIE MA TAKIEJ OPCJI! SPROBUJ PONOWNIE!"
+            Pause
+            Clear-Host
+            $correct_mode_choice = 0
+        }
     }
     Pause
     Stop-Transcript
