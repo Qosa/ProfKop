@@ -90,7 +90,6 @@ function errorchecker($fin1){
         $try_again = Read-Host "UZYTKOWNIK NIEZALOGOWANY NA ZDALNYM KOMPUTERZE! SPROBOWAC PONOWNIE??? (Y - tak, dowolny klawisz + enter - wyjscie)"
         if($try_again -eq 'Y' -or $try_again -eq 'y'){
             return 0
-
         } else {
             Clear-Host
             exit
