@@ -29,14 +29,14 @@ function localDiskChecker($user,$path,$disks,$local_flag) {
         $fin1="$letter$path$user"
         $break_counter = 0
 	    if (Test-Path $fin1) {
-		    Write-Host "UZYTKOWNIK ZALOGOWANY NA PARTYCJI --->>" $disks[$x]
+            #Write-Host "DYSK LOKALNY" -ForegroundColor Yellow
+		    #Write-Host "UZYTKOWNIK ZALOGOWANY NA PARTYCJI --->>" $disks[$x] -ForegroundColor Yellow
 		    $disks[$x]=0 
             $break_counter++
-            return $fin1
             break } 
     }
     if($local_flag -eq 0){    
-        if ($break_counter -eq 0) {
+        if (($break_counter -eq 0) -or ($letter -ne "c:" -and $letter -ne "d:")) {
                 $not_logged_in = Read-Host "UZYTKOWNIK NIEZALOGOWANY NA TYM KOMPUTERZE! CZY CHCESZ GO ZALOGOWAC? (Y - tak, N - od poczatku, dowolny klawisz + enter - wyjscie)"
                 if($not_logged_in -eq 'Y' -or $not_logged_in -eq 'y'){
                     return userFirstLogon
@@ -50,15 +50,17 @@ function localDiskChecker($user,$path,$disks,$local_flag) {
         }
     }
     elseif($local_flag -eq 1){
-        $try_again = Read-Host "UZYTKOWNIK NIEZALOGOWANY NA DYSKU ZEWNETRZNYM! SPROBOWAC PONOWNIE? (Y - tak, dowolny klawisz + enter - wyjscie)"
-        if($try_again -eq 'Y' -or $try_again -eq 'y'){
-            return 0
-        } else {
-            Clear-Host
-            exit
-        }
-
-    }        
+        if ($break_counter -eq 0) {
+            $try_again = Read-Host "UZYTKOWNIK NIEZALOGOWANY NA DYSKU ZEWNETRZNYM! SPROBOWAC PONOWNIE? (Y - tak, dowolny klawisz + enter - wyjscie)"
+            if($try_again -eq 'Y' -or $try_again -eq 'y'){
+                return 0
+            } else {
+                Clear-Host
+                exit
+            }
+       } 
+    } 
+    return $fin1      
 }
 
 function checkNetworkDrive($ip_address,$disks, $user, $path){
@@ -109,7 +111,10 @@ function ifLocal($ip_address, $user){
     if($ip_address -eq 'L' -or $ip_address -eq 'l'){ 
         $local_flag = 0
         $fin1 = localDiskChecker $user $path $disks $local_flag
-        Write-Host $fin1
+        if($fin1 -eq 1){
+            $fin1 = localDiskChecker $user $path $disks $local_flag
+        }
+        Write-Host $disks
         return $fin1
     }
     else {
@@ -128,18 +133,19 @@ function summary($fin1,$fin2,$additionalfiles) {
    $items =  Get-ChildItem $fin1'\Documents',$fin1'\Desktop',$fin1'\My Documents',$fin1'\Pictures',$fin1'\Music',$fin1'\Favorites',$fin1'\Contacts',$fin1'\Videos',$fin1'\Downloads' -Recurse
    $total_amount_of_elems = ($items | Measure-Object).Count 
    $total_size_of_elems = [math]::Round(($items | Measure-Object -Sum Length).Sum / 1GB,3)
-   Write-Host "-----------> Z: "$fin1[0]" NA: "$fin2[0]
-   Write-Host "-----------> DO SKOPIOWANIA OGOLEM:"$total_amount_of_elems" elementow"
-   Write-Host "-----------> DODATKOWE PLIKI:"
+   Write-Host "-----------> Z: "$fin1
+   Write-Host "-----------> NA: "$fin2
+   Write-Host "-----------> DO SKOPIOWANIA OGOLEM:"$total_amount_of_elems" elementow" 
+   Write-Host "-----------> DODATKOWE PLIKI:" -NoNewline
    Try {
         for($x=0; $x -le ($additionalfiles | Measure-Object).Count; $x++) {  
             Write-Host "      "$additionalfiles[$x]
         }
    } Catch {
-       Write-Host "      nie wybrano"
+       Write-Host " nie wybrano" -ForegroundColor Yellow
    }
-   Write-Host "-----------> CALKOWITY ROZMIAR:"$total_size_of_elems" GB"
-}
+   Write-Host "-----------> CALKOWITY ROZMIAR:"$total_size_of_elems" GB" -ForegroundColor Magenta
+  }
 
 function copyFiles($fin1, $fin2, $additionalfiles){
     $FOF_CREATEPROGRESSDLG = "&H0&"
@@ -244,7 +250,7 @@ Function addFiles {
 
 
 # ----------------------------> MAIN <-------------------------------
-if($False){ #$env:UserName[1] -ne "_"
+if($env:UserName[1] -ne "_"){ 
     Write-Host "BLAD!URUCHOM SKRYPT JAKO ADMINISTRATOR DOMENOWY!"
     exit
 } else {
@@ -271,21 +277,30 @@ if($False){ #$env:UserName[1] -ne "_"
                 Write-Host "-------------> KOPIOWANIE Z DYSKU <-------------`n" 
                 $user = Read-Host "PODAJ LOGIN UZYTKOWNIKA"
                 $fin2 = localDiskChecker $user $path $disks $local_flag #DESTINATION
-                Write-Host ">LOKALIZACJA: "$fin2
+                if($fin2 -eq 1){
+                    $fin2 = localDiskChecker $user $path $disks $local_flag
+                }
+                #Write-Host ">LOKALIZACJA: "$fin2
                 if($fin2 -ne 0){
                     $disk_flag2 = 1
                 }
             }
                 $local_flag = 1
                 $fin1 = localDiskChecker $user $path $disks $local_flag #SOURCE
-                Write-Host ">LOKALIZACJA: "$fin1
+                if($fin1 -eq 1){
+                    $fin1 = localDiskChecker $user $path $disks $local_flag
+                }
+                #Write-Host ">LOKALIZACJA: "$fin1
                 if($fin1 -ne 0){
                     $disk_flag = 1
                 } elseif($fin1 -eq 0) {
+                    $disks = 'c','d','e','f','g','h','i'
                     $disk_flag2 = 0
                     $local_flag = 0
                 }            
             }
+            Write-Host "DYSK1(Z): " $fin1 -ForegroundColor Magenta
+            Write-Host "DYSK2(NA): " $fin2 -ForegroundColor Magenta
             $additionalfiles = addFiles
             summary $fin1 $fin2 $additionalfiles
             pause
@@ -308,21 +323,22 @@ if($False){ #$env:UserName[1] -ne "_"
                 Clear-Host
             }
             else {
-                $fin1 = ifLocal $ip_address $user
+                $fin1 = ifLocal $ip_address $user $local_flag
                 if($fin1 -eq 0) {
                     $returnFlag = 0
                 } else {
-                    $fin2 = ifLocal $ip_address2 $user
+                    $fin2 = ifLocal $ip_address2 $user $local_flag
                     if($fin2 -eq 0) {
                         $returnFlag = 0
                     } else {
-                        Write-Host "DYSK1(Z): " $fin1 
-                        Write-Host "DYSK2(NA): " $fin2
+                        Write-Host "DYSK1(Z): " $fin1 -ForegroundColor Magenta
+                        Write-Host "DYSK2(NA): " $fin2 -ForegroundColor Magenta
                         $additionalfiles = addFiles
                         summary $fin1 $fin2 $additionalfiles
                         pause
                         copyFiles $fin1 $fin2 $additionalfiles
                         $correct_mode_choice = 1
+                        $return_flag = 1
                     }
                 } 
             }
