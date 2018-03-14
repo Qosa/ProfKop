@@ -1,4 +1,3 @@
-
 function userFirstLogon{
 # PIERWSZE LOGOWANIE UZYTKOWNIKA - TYLKO DYSKI LOKALNE
     $first_logon_flag = 0
